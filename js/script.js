@@ -355,72 +355,125 @@
 
 
 /* ==========================================================================
-   HOW IT COMES TOGETHER — sequential timeline reveal
+   HOW IT COMES TOGETHER — interactive project journey
    ========================================================================== */
 (function () {
   "use strict";
 
-  var timeline = document.querySelector("#process-timeline");
-  if (!timeline) return;
+  var section = document.querySelector("#process");
+  if (!section) return;
 
-  var steps = Array.prototype.slice.call(timeline.querySelectorAll(".pt-step"));
-  if (!steps.length) return;
+  var experience = section.querySelector("#process-experience");
+  var revealButton = section.querySelector("[data-process-reveal]");
+  var replayButton = section.querySelector("[data-process-replay]");
+  var stations = Array.prototype.slice.call(section.querySelectorAll("[data-process-stage]"));
+  var details = Array.prototype.slice.call(section.querySelectorAll("[data-process-detail]"));
+  var currentLabel = section.querySelector("[data-process-current]");
+  var progress = section.querySelector("[data-process-progress]");
+  var liveRegion = section.querySelector("[data-process-live]");
+  var stationList = section.querySelector(".journey-stations");
+  var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!experience || !revealButton || !replayButton || stations.length !== details.length || !stations.length) return;
 
-  function showAll() {
-    steps.forEach(function (step) {
-      step.classList.add("is-visible", "is-filled");
+  section.classList.add("has-journey-js");
+  details.forEach(function (detail, index) {
+    detail.hidden = index !== 0;
+  });
+
+  var replayTimer = null;
+  var replaying = false;
+
+  function setActive(index, announce) {
+    stations.forEach(function (station, stationIndex) {
+      var isActive = stationIndex === index;
+      station.classList.toggle("is-active", isActive);
+      station.classList.toggle("is-complete", stationIndex < index);
+      station.setAttribute("aria-pressed", String(isActive));
+      if (isActive) {
+        station.setAttribute("aria-current", "step");
+      } else {
+        station.removeAttribute("aria-current");
+      }
     });
-  }
 
-  // No motion wanted, or no IntersectionObserver: show the finished timeline.
-  if (reduceMotion || !("IntersectionObserver" in window)) {
-    showAll();
-    return;
-  }
-
-  var REVEAL_TO_FILL = 350;  // ms after a step appears before the line starts to grow
-  var FILL_TIME = 700;       // ms the line takes to reach the next circle
-  var seen = steps.map(function () { return false; });
-  var next = 0;
-  var busy = false;
-
-  timeline.classList.add("is-ready"); // enables the hidden "before" state
-
-  // Reveal steps strictly in order: circle + card, then the line grows to the next circle.
-  function play() {
-    if (busy || next >= steps.length || !seen[next]) return;
-    busy = true;
-
-    var index = next;
-    var step = steps[index];
-    var isLast = index === steps.length - 1;
-    next += 1;
-
-    step.classList.add("is-visible");
-
-    window.setTimeout(function () {
-      if (!isLast) step.classList.add("is-filled");
-      window.setTimeout(function () {
-        busy = false;
-        play();
-      }, isLast ? 0 : FILL_TIME - 100);
-    }, REVEAL_TO_FILL);
-  }
-
-  var observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      // Also count steps already scrolled past (e.g. page reloaded further down).
-      var passed = entry.boundingClientRect.top < 0;
-      if (!entry.isIntersecting && !passed) return;
-      seen[steps.indexOf(entry.target)] = true;
-      observer.unobserve(entry.target);
+    details.forEach(function (detail, detailIndex) {
+      var isActive = detailIndex === index;
+      detail.hidden = !isActive;
+      detail.classList.toggle("is-active", isActive);
     });
-    play();
-  }, { threshold: 0.1, rootMargin: "0px 0px -12% 0px" });
 
-  steps.forEach(function (step) { observer.observe(step); });
+    if (currentLabel) currentLabel.textContent = String(index + 1).padStart(2, "0");
+    if (progress) progress.style.setProperty("--journey-progress", String(index / (stations.length - 1)));
+    experience.classList.toggle("is-complete", index === stations.length - 1);
+    if (announce && liveRegion) {
+      var title = stations[index].querySelector(".journey-stop-title");
+      liveRegion.textContent = "Stage " + String(index + 1).padStart(2, "0") + " of " + String(stations.length).padStart(2, "0") + ": " + title.textContent;
+    }
+  }
+
+  function stopReplay() {
+    if (replayTimer !== null) {
+      window.clearTimeout(replayTimer);
+      replayTimer = null;
+    }
+    replaying = false;
+    if (stationList) stationList.classList.remove("is-replaying");
+  }
+
+  function playReveal() {
+    stopReplay();
+    replaying = true;
+    if (stationList) stationList.classList.add("is-replaying");
+    stations.forEach(function (station) {
+      station.classList.remove("is-shown", "is-complete");
+    });
+    setActive(0, false);
+
+    if (reducedMotion.matches) {
+      stations.forEach(function (station) { station.classList.add("is-shown"); });
+      stopReplay();
+      return;
+    }
+
+    var next = 0;
+    function revealNext() {
+      if (!replaying) return;
+      if (next >= stations.length) {
+        replayTimer = window.setTimeout(function () {
+          replayTimer = null;
+          stopReplay();
+          setActive(0, false);
+        }, 420);
+        return;
+      }
+
+      stations[next].classList.add("is-shown");
+      if (progress) progress.style.setProperty("--journey-progress", String(next / (stations.length - 1)));
+      next += 1;
+      replayTimer = window.setTimeout(revealNext, 220);
+    }
+
+    revealNext();
+  }
+
+  revealButton.addEventListener("click", function () {
+    section.classList.add("journey-revealed");
+    revealButton.setAttribute("aria-expanded", "true");
+    playReveal();
+  });
+
+  replayButton.addEventListener("click", playReveal);
+
+  stations.forEach(function (station, index) {
+    station.addEventListener("click", function () {
+      if (!section.classList.contains("journey-revealed")) return;
+      stopReplay();
+      stationList.classList.remove("is-replaying");
+      stations.forEach(function (item) { item.classList.add("is-shown"); });
+      setActive(index, true);
+    });
+  });
 }());
 /* ==========================================================================
    BEFORE & AFTER COMPARISON SLIDER (reusable: any element with [data-ba])

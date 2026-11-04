@@ -153,44 +153,112 @@
       </div>
     </section>
 
-    <section class="process section-pad" id="process">
+    <section class="process section-pad" id="process" aria-labelledby="process-title">
       <div class="container">
-        <div class="process-head reveal"><div><p class="eyebrow light-eyebrow"><span class="eyebrow-line"></span> HOW IT COMES TOGETHER</p><h2>A clear path.<br><em>No mystery.</em></h2></div><p>Good work begins with a good conversation. Here’s the simple shape of a project with OdishaTech.</p></div>
-        <ol class="process-timeline" id="process-timeline" aria-label="Our four-step process">
-          <li class="pt-step">
-            <span class="pt-dot" aria-hidden="true">01</span>
-            <div class="pt-body">
-              <span class="pt-word">Listen</span>
-              <h3>Discover</h3>
-              <p>Understand the business, goals, audience, and requirements.</p>
-            </div>
-          </li>
-          <li class="pt-step">
-            <span class="pt-dot" aria-hidden="true">02</span>
-            <div class="pt-body">
-              <span class="pt-word">Shape</span>
-              <h3>Design</h3>
-              <p>Create an attractive design tailored to the brand.</p>
-            </div>
-          </li>
-          <li class="pt-step">
-            <span class="pt-dot" aria-hidden="true">03</span>
-            <div class="pt-body">
-              <span class="pt-word">Build</span>
-              <h3>Develop</h3>
-              <p>Build a responsive, fast, user-friendly website.</p>
-            </div>
-          </li>
-          <li class="pt-step">
-            <span class="pt-dot" aria-hidden="true">04</span>
-            <div class="pt-body">
-              <span class="pt-word">Go live</span>
-              <h3>Launch</h3>
-              <p>Test, publish, and help the business establish its online presence.</p>
-            </div>
-          </li>
-        </ol>
-        <div class="process-bottom"><span>01 —— 04</span><span>ONE STEP AT A TIME</span><a href="#contact">Start with a conversation <span>→</span></a></div>
+        <div class="journey-heading reveal">
+          <p class="eyebrow journey-eyebrow"><span class="eyebrow-line"></span> HOW IT COMES TOGETHER</p>
+          <h2 id="process-title" class="journey-title">From Your Idea to Your<br><em>Digital Success</em></h2>
+          <p>Every great website starts with an idea. We turn your vision into a powerful digital experience through a simple, transparent and collaborative process.</p>
+        </div>
+
+        <div class="journey-gate">
+          <span class="journey-gate-mark" aria-hidden="true"><span>01</span><i></i><b>06</b></span>
+          <div class="journey-gate-copy">
+            <span class="journey-kicker">A CLEAR PATH, BUILT AROUND YOU</span>
+            <h3>Your Project.<br><em>Our Process.</em></h3>
+            <p>Discover how we turn your ideas into a website that works for your business.</p>
+          </div>
+          <button class="button button-primary journey-reveal-button" type="button" data-process-reveal aria-expanded="false" aria-controls="process-experience">Explore Our Process <span aria-hidden="true">→</span></button>
+        </div>
+
+        <div class="journey-experience" id="process-experience">
+          <div class="journey-toolbar">
+            <p><span class="journey-toolbar-label">YOUR PROJECT JOURNEY</span><span class="journey-current" data-process-current>01</span><span class="journey-total">/ 06</span></p>
+            <button class="journey-replay" type="button" data-process-replay><span aria-hidden="true">↻</span> Replay Journey</button>
+          </div>
+
+          <div class="journey-rail" data-process-rail>
+            <div class="journey-progress" data-process-progress aria-hidden="true"></div>
+            <ol class="journey-stations" aria-label="Six stages of your website project">
+              <li>
+                <button class="journey-stop is-active" type="button" data-process-stage="0" aria-controls="process-detail-0" aria-pressed="true" aria-current="step">
+                  <span class="journey-number">01</span>
+                  <img src="assets/images/process/discover.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">DISCOVERY</span><span class="journey-stop-title">Discover</span><span class="journey-stop-summary">Understand your business, goals, target audience and requirements.</span></span>
+                </button>
+              </li>
+              <li>
+                <button class="journey-stop" type="button" data-process-stage="1" aria-controls="process-detail-1" aria-pressed="false">
+                  <span class="journey-number">02</span>
+                  <img src="assets/images/process/strategy.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">STRATEGY</span><span class="journey-stop-title">Plan &amp; Strategize</span><span class="journey-stop-summary">Define the website structure, features, content direction and project roadmap.</span></span>
+                </button>
+              </li>
+              <li>
+                <button class="journey-stop" type="button" data-process-stage="2" aria-controls="process-detail-2" aria-pressed="false">
+                  <span class="journey-number">03</span>
+                  <img src="assets/images/process/design.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">DESIGN</span><span class="journey-stop-title">Design</span><span class="journey-stop-summary">Create an attractive, modern and user-friendly interface that represents your brand.</span></span>
+                </button>
+              </li>
+              <li>
+                <button class="journey-stop" type="button" data-process-stage="3" aria-controls="process-detail-3" aria-pressed="false">
+                  <span class="journey-number">04</span>
+                  <img src="assets/images/process/development.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">DEVELOPMENT</span><span class="journey-stop-title">Develop</span><span class="journey-stop-summary">Build a responsive, fast and functional website using modern technologies.</span></span>
+                </button>
+              </li>
+              <li>
+                <button class="journey-stop" type="button" data-process-stage="4" aria-controls="process-detail-4" aria-pressed="false">
+                  <span class="journey-number">05</span>
+                  <img src="assets/images/process/testing.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">QUALITY CHECK</span><span class="journey-stop-title">Test &amp; Optimize</span><span class="journey-stop-summary">Check mobile responsiveness, performance, functionality, SEO foundations and user experience.</span></span>
+                </button>
+              </li>
+              <li>
+                <button class="journey-stop" type="button" data-process-stage="5" aria-controls="process-detail-5" aria-pressed="false">
+                  <span class="journey-number">06</span>
+                  <img src="assets/images/process/launch.webp" alt="" loading="lazy" decoding="async">
+                  <span class="journey-stop-copy"><span class="journey-milestone">LAUNCH</span><span class="journey-stop-title">Launch &amp; Support</span><span class="journey-stop-summary">Publish your website and provide guidance and support after launch.</span></span>
+                </button>
+              </li>
+            </ol>
+          </div>
+
+          <div class="journey-details" aria-live="polite">
+            <article class="journey-detail is-active" id="process-detail-0" data-process-detail="0" aria-labelledby="process-detail-title-0">
+              <div class="journey-detail-image"><img src="assets/images/process/discover.webp" alt="A small team gathered around laptops for a project discussion" loading="lazy" decoding="async"><span class="journey-image-tag">01 / DISCOVERY</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">THE FIRST CONVERSATION</span><h3 id="process-detail-title-0">Start with <em>your why.</em></h3><p>Understand your business, goals, target audience and requirements.</p><span class="journey-detail-note"><i aria-hidden="true">01</i> A shared understanding of what success looks like.</span></div>
+            </article>
+            <article class="journey-detail" id="process-detail-1" data-process-detail="1" aria-labelledby="process-detail-title-1">
+              <div class="journey-detail-image"><img src="assets/images/process/strategy.webp" alt="Planning notes and a laptop laid out during a project strategy session" loading="lazy" decoding="async"><span class="journey-image-tag">02 / STRATEGY</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">A PLAN WITH PURPOSE</span><h3 id="process-detail-title-1">Make a plan<br>that <em>fits.</em></h3><p>Define the website structure, features, content direction and project roadmap.</p><span class="journey-detail-note"><i aria-hidden="true">02</i> A clear direction before the design begins.</span></div>
+            </article>
+            <article class="journey-detail" id="process-detail-2" data-process-detail="2" aria-labelledby="process-detail-title-2">
+              <div class="journey-detail-image"><img src="assets/images/process/design.webp" alt="A designer using a digital tablet to shape a visual interface" loading="lazy" decoding="async"><span class="journey-image-tag">03 / DESIGN</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">YOUR BRAND, MADE VISIBLE</span><h3 id="process-detail-title-2">Give your idea<br>a <em>look &amp; feel.</em></h3><p>Create an attractive, modern and user-friendly interface that represents your brand.</p><span class="journey-detail-note"><i aria-hidden="true">03</i> Thoughtful design shaped around your customers.</span></div>
+            </article>
+            <article class="journey-detail" id="process-detail-3" data-process-detail="3" aria-labelledby="process-detail-title-3">
+              <div class="journey-detail-image"><img src="assets/images/process/development.webp" alt="Website code open on a developer's computer" loading="lazy" decoding="async"><span class="journey-image-tag">04 / DEVELOPMENT</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">BUILT FOR THE REAL WORLD</span><h3 id="process-detail-title-3">Bring it<br><em>to life.</em></h3><p>Build a responsive, fast and functional website using modern technologies.</p><span class="journey-detail-note"><i aria-hidden="true">04</i> A dependable experience on every screen.</span></div>
+            </article>
+            <article class="journey-detail" id="process-detail-4" data-process-detail="4" aria-labelledby="process-detail-title-4">
+              <div class="journey-detail-image"><img src="assets/images/process/testing.webp" alt="A mobile app preview beside a desktop screen during device testing" loading="lazy" decoding="async"><span class="journey-image-tag">05 / QUALITY CHECK</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">THE IMPORTANT DETAILS</span><h3 id="process-detail-title-4">Make every<br>detail <em>work.</em></h3><p>Check mobile responsiveness, performance, functionality, SEO foundations and user experience.</p><span class="journey-detail-note"><i aria-hidden="true">05</i> Review, refine and get ready to go live.</span></div>
+            </article>
+            <article class="journey-detail" id="process-detail-5" data-process-detail="5" aria-labelledby="process-detail-title-5">
+              <div class="journey-detail-image"><img src="assets/images/process/launch.webp" alt="A finished digital product website displayed across desktop, tablet and phone screens" loading="lazy" decoding="async"><span class="journey-image-tag">06 / LAUNCH</span></div>
+              <div class="journey-detail-copy"><span class="journey-detail-index">READY FOR WHAT'S NEXT</span><h3 id="process-detail-title-5">Open your doors<br><em>to the web.</em></h3><p>Publish your website and provide guidance and support after launch.</p><span class="journey-detail-note"><i aria-hidden="true">06</i> Your new digital presence is ready to grow.</span></div>
+            </article>
+          </div>
+
+          <div class="journey-completion" data-process-completion>
+            <span class="completion-mark" aria-hidden="true">✓</span>
+            <div><span class="journey-detail-index">THE NEXT CHAPTER STARTS HERE</span><h3>Your Website Is Ready to Grow.</h3><p>Your digital presence is live. Now it's time to reach more customers.</p></div>
+            <a class="button button-primary" href="#contact">Start Your Project <span aria-hidden="true">→</span></a>
+          </div>
+          <p class="journey-live sr-only" data-process-live aria-live="polite"></p>
+        </div>
       </div>
     </section>
 
