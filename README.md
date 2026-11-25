@@ -1,6 +1,6 @@
 # OdishaTech static website
 
-A mobile-first, single-page website for OdishaTech, made with semantic HTML, CSS, and classic vanilla JavaScript. It has no build step, framework, local-content fetch, server-side feature, or JavaScript module. The page uses relative asset paths so the same website can be opened directly from `file://` or served by a static preview.
+A mobile-first, single-page website for OdishaTech, made with semantic HTML, CSS, and classic vanilla JavaScript. It has no build step, framework, or JavaScript module. Customer reviews use a Google Apps Script API; the rest of the page uses relative asset paths so the site can be opened directly from `file://` or served by a static preview.
 
 ## Open the website
 
@@ -13,7 +13,7 @@ You may also use VS Code Live Server or any static file server. No package insta
 
 - `index.html` — semantic page markup, concept previews, contact form, and site sections.
 - `css/style.css` — responsive white-and-blue visual system, layouts, and reduced-motion-aware animation.
-- `js/script.js` — floating navigation state, accessible mobile menu, typing line, scroll reveals, current year, and client-side WhatsApp handoff.
+- `js/script.js` — floating navigation state, accessible mobile menu, typing line, scroll reveals, customer review API and modal behavior, current year, and client-side WhatsApp handoff.
 - `assets/images/odishatech-logo.png` — supplied logo, used without alteration.
 - `assets/images/why-odishatech.png` — supplied visual for the “Why Odisha Tech” section.
 - `assets/images/*.webp` — optimized local Unsplash photographs for the service feature, industry cards, and illustrative concept previews. The concept previews remain examples, not completed client work.
@@ -24,6 +24,10 @@ The “Why Odisha Tech” PNG is fully opaque, so its checkerboard background re
 ## Contact form behavior
 
 The form checks required fields and accepts an email address or phone number for the reply contact. It prepares a message and opens WhatsApp at `https://wa.me/917064331920`. The visitor reviews and sends the message in WhatsApp; the form does not claim to submit to OdishaTech or save information on a server.
+
+## Customer reviews
+
+The review section loads asynchronously as it approaches the viewport and caches successful results in `sessionStorage` for up to two minutes. Its responsive carousel shows three cards on desktop, two on tablet, and one on mobile; “View All Reviews” lists every published review. Submissions include a generated `submissionId` and are stored as Pending for approval; only Published reviews are shown publicly. Update the endpoint in `data-review-endpoint` if the deployment changes. No private credentials are included in the static site.
 
 ## Notes
 
