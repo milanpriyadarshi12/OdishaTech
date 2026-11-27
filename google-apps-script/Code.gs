@@ -143,9 +143,10 @@ function doPost(event) {
 function getReviewsSheet() {
   if (
     !SPREADSHEET_ID ||
-    SPREADSHEET_ID === "PASTE_YOUR_GOOGLE_SHEET_ID_HERE"
+    SPREADSHEET_ID === "PASTE_YOUR_GOOGLE_SHEET_ID_HERE" ||
+    SPREADSHEET_ID === "1AbCdEfGhIjKlMnOpQrStUvWxYz123456789"
   ) {
-    throw new Error("Please enter your Google Sheet ID.");
+    throw new Error("SPREADSHEET_ID is still the placeholder. Paste the real ID from your Google Sheet URL (docs.google.com/spreadsheets/d/<ID>/edit).");
   }
 
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -192,4 +193,27 @@ function jsonOutput(value) {
   return ContentService
     .createTextOutput(JSON.stringify(value))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ---------- Manual checks: run these from the Apps Script editor (Run button) ---------- */
+
+/* Read-only: confirms the spreadsheet ID, the "Reviews" tab and the headings. Writes nothing. */
+function checkSetup() {
+  const sheet = getReviewsSheet();
+  console.log("OK. Sheet found: " + sheet.getParent().getName() + " / " + sheet.getName() +
+    " — rows: " + sheet.getLastRow());
+}
+
+/* Appends ONE clearly labelled Pending test row through the real doPost code path. */
+function testSubmitReview() {
+  const result = doPost({
+    parameter: {
+      action: "submit",
+      name: "TEST - please delete",
+      rating: "5",
+      review: "Test review from the Apps Script editor.",
+      submissionId: "editor-test-" + Date.now()
+    }
+  });
+  console.log(result.getContent());
 }

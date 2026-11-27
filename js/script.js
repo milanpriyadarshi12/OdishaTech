@@ -69,8 +69,15 @@
 
   if (header) {
     var ticking = false;
+    var lastY = window.scrollY;
     function updateHeader() {
-      header.classList.toggle("is-scrolled", window.scrollY > 24);
+      var y = window.scrollY;
+      header.classList.toggle("is-scrolled", y > 24);
+      /* Show the navbar while scrolling down, hide it on scroll up (always visible near the top or with the menu open). */
+      var menuOpen = document.body.classList.contains("menu-open");
+      if (y < 80 || menuOpen || y > lastY + 4) header.classList.remove("is-hidden");
+      else if (y < lastY - 4) header.classList.add("is-hidden");
+      if (Math.abs(y - lastY) > 4) lastY = y;
       ticking = false;
     }
     window.addEventListener("scroll", function () {
@@ -167,14 +174,15 @@
               if (counter.getAttribute("data-counted") === "true") return;
               counter.setAttribute("data-counted", "true");
               var target = Number(counter.getAttribute("data-count-target"));
-              var duration = 2000;
+              var duration = 1800;
+              var delay = 120 * Array.prototype.indexOf.call(counters, counter);
               var startTime = null;
 
               function updateCounter(timestamp) {
-                if (startTime === null) startTime = timestamp;
-                var progress = Math.min((timestamp - startTime) / duration, 1);
-                var easedProgress = 1 - Math.pow(1 - progress, 3);
-                counter.textContent = String(Math.round(target * easedProgress));
+                if (startTime === null) startTime = timestamp + delay;
+                var progress = Math.max(0, Math.min((timestamp - startTime) / duration, 1));
+                var eased = 1 - Math.pow(1 - progress, 4);
+                counter.textContent = String(Math.round(target * eased));
                 if (progress < 1) window.requestAnimationFrame(updateCounter);
               }
 
@@ -183,8 +191,8 @@
             observer.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.18, rootMargin: "0px 0px -20px 0px" });
-      whyObserver.observe(whySection);
+      }, { threshold: 0.6 });
+      whyObserver.observe(whySection.querySelector(".why-stat-grid") || whySection);
     }
   }
 
@@ -198,53 +206,105 @@
     link.rel = "noopener noreferrer";
   });
 
+  /* Contact form: sends the enquiry through EmailJS (config in index.html: window.ODISHATECH_EMAILJS). */
   if (form) {
+    var cfg = window.ODISHATECH_EMAILJS || {};
+    /* Trim accidental spaces/line breaks copied from the dashboard. */
+    ["SERVICE_ID", "TEMPLATE_ID", "PUBLIC_KEY"].forEach(function (key) {
+      if (typeof cfg[key] === "string") cfg[key] = cfg[key].trim();
+    });
+    var submitButton = form.querySelector(".submit-button");
+    var submitLabel = submitButton && submitButton.querySelector(".submit-label");
+    var idleLabel = submitLabel ? submitLabel.textContent : "";
+    var sending = false;
+    var emailjsReady = false;
+    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    var SUCCESS_TEXT = "Thank you! Your enquiry has been sent successfully. Our team will contact you soon.";
+    var ERROR_TEXT = "We couldn\u2019t send your enquiry right now. Please try again or contact us directly.";
+
+    if (cfg.PUBLIC_KEY && (cfg.PUBLIC_KEY === cfg.TEMPLATE_ID || cfg.PUBLIC_KEY === cfg.SERVICE_ID) && window.console) {
+      console.warn("EmailJS config: PUBLIC_KEY equals a template/service ID. Copy the real Public Key from Account \u2192 General.");
+    }
+    if (window.emailjs && cfg.PUBLIC_KEY) {
+      window.emailjs.init({ publicKey: cfg.PUBLIC_KEY });
+      emailjsReady = true;
+    }
+
+    function showFeedback(state, text) {
+      if (!feedback) return;
+      feedback.setAttribute("data-state", state);
+      feedback.textContent = text;
+    }
+
+    function setSending(on) {
+      sending = on;
+      form.classList.toggle("is-sending", on);
+      form.setAttribute("aria-busy", String(on));
+      if (submitButton) {
+        submitButton.disabled = on;
+        submitButton.classList.toggle("is-loading", on);
+      }
+      if (submitLabel) submitLabel.textContent = on ? "Sending…" : idleLabel;
+    }
+
+    function fieldError(field, message) {
+      field.setCustomValidity(message);
+      field.reportValidity();
+      field.addEventListener("input", function clear() {
+        field.setCustomValidity("");
+        field.removeEventListener("input", clear);
+      });
+    }
+
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      if (!form.reportValidity()) return;
+      if (sending) return;
 
-      var name = form.elements.name.value.trim();
-      var business = form.elements.business.value.trim();
-      var contact = form.elements.contact.value.trim();
-      var type = form.elements.type.value;
-      var requirements = form.elements.requirements.value.trim();
-      var selectedPackage = packageField ? packageField.value : "";
-      var looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
-      var digits = contact.replace(/\D/g, "");
-      var looksLikePhone = digits.length >= 7 && digits.length <= 15;
+      var f = form.elements;
+      var name = f.name.value.trim();
+      var business = f.business.value.trim();
+      var email = f.email.value.trim();
+      var phone = f.phone.value.trim();
+      var type = f.type.value;
+      var selectedPackage = f.package ? f.package.value : "";
+      var description = f.requirements.value.trim();
 
-      if (!looksLikeEmail && !looksLikePhone) {
-        form.elements.contact.setCustomValidity("Enter a valid email address or phone number.");
-        form.elements.contact.reportValidity();
-        form.elements.contact.addEventListener("input", function clearContactError() {
-          form.elements.contact.setCustomValidity("");
-          form.elements.contact.removeEventListener("input", clearContactError);
-        });
+      showFeedback("", "");
+      if (!name) return fieldError(f.name, "Please enter your name.");
+      if (!email) return fieldError(f.email, "Please enter your email address.");
+      if (!emailPattern.test(email)) return fieldError(f.email, "Please enter a valid email address.");
+      if (!type) return fieldError(f.type, "Please choose a website type.");
+      if (!description) return fieldError(f.requirements, "Please tell us a little about your project.");
+
+      if (!emailjsReady && window.emailjs && cfg.PUBLIC_KEY) {
+        window.emailjs.init({ publicKey: cfg.PUBLIC_KEY });
+        emailjsReady = true;
+      }
+      if (!emailjsReady) {
+        showFeedback("error", ERROR_TEXT);
         return;
       }
-      form.elements.contact.setCustomValidity("");
 
-      var messageLines = [
-        "Hello OdishaTech, I’d like to discuss a website project.",
-        "",
-        "Name: " + name,
-        "Business: " + (business || "Not provided"),
-        "Email or phone: " + contact,
-        "Website type: " + type
-      ];
-      if (selectedPackage) messageLines.push("Selected package: " + selectedPackage);
-      messageLines.push(
-        "",
-        "Project requirements:",
-        requirements
-      );
-      var message = messageLines.join("\n");
-      var whatsappUrl = "https://wa.me/917064331920?text=" + encodeURIComponent(message);
-      if (feedback) feedback.textContent = "Opening WhatsApp with your message. Review it there, then choose Send.";
-      var newWindow = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      if (!newWindow) {
-        window.location.href = whatsappUrl;
-      }
+      var contactDetails = "Email: " + email + (phone ? "\nPhone: " + phone : "");
+      setSending(true);
+      window.emailjs.send(cfg.SERVICE_ID, cfg.TEMPLATE_ID, {
+        customer_name: name,
+        business_name: business || "Not provided",
+        contact_details: contactDetails,
+        website_type: type,
+        selected_package: selectedPackage || "Not selected",
+        project_description: description,
+        customer_email: email
+      }, { publicKey: cfg.PUBLIC_KEY }).then(function () {
+        form.reset();
+        setSending(false);
+        showFeedback("success", SUCCESS_TEXT);
+      }, function (err) {
+        /* Log only EmailJS's status/reason (never form data) so setup problems are visible in DevTools. */
+        if (window.console && console.error) console.error("EmailJS send failed:", err && err.status, err && err.text, "| service_id:", cfg.SERVICE_ID, "| template_id:", cfg.TEMPLATE_ID);
+        setSending(false);
+        showFeedback("error", ERROR_TEXT);
+      });
     });
   }
 }());
@@ -258,11 +318,11 @@
   var form = document.querySelector("[data-callback-form]");
   var success = document.querySelector("[data-callback-success]");
   var closeButton = dialog && dialog.querySelector("[data-callback-close]");
-  var openButton = document.querySelector("[data-callback-open]");
+  var openButtons = document.querySelectorAll("[data-callback-open]");
   var message = form && form.querySelector("[data-callback-message]");
   var whatsappLink = success && success.querySelector("[data-callback-whatsapp]");
   var emailLink = success && success.querySelector("[data-callback-email]");
-  if (!backdrop || !dialog || !form || !success || !closeButton || !openButton || !message || !whatsappLink || !emailLink) return;
+  if (!backdrop || !dialog || !form || !success || !closeButton || !openButtons.length || !message || !whatsappLink || !emailLink) return;
 
   document.body.appendChild(backdrop);
   var opener = null;
@@ -281,14 +341,15 @@
     opener = null;
   }
 
-  function openDialog() {
+  function openDialog(event) {
+    if (event && event.preventDefault) event.preventDefault();
     if (!success.hidden) {
       form.reset();
       form.hidden = false;
       success.hidden = true;
       message.textContent = "";
     }
-    opener = openButton;
+    opener = (event && event.currentTarget) || null;
     dialog.hidden = false;
     backdrop.hidden = false;
     priorBodyOverflow = document.body.style.overflow;
@@ -304,7 +365,7 @@
     closeButton.focus();
   }
 
-  openButton.addEventListener("click", openDialog);
+  openButtons.forEach(function (button) { button.addEventListener("click", openDialog); });
   closeButton.addEventListener("click", function () { closeDialog(true); });
   backdrop.addEventListener("click", function (event) {
     if (event.target === backdrop) closeDialog(true);
@@ -940,6 +1001,12 @@
     }, 4500);
   }
 
+  function markCenter() {
+    var start = startIndexForPage(index);
+    var c = perView >= 3 ? start + 1 : start;
+    slides.forEach(function (sl, i) { sl.classList.toggle("is-center", i === c); });
+  }
+
   function go(nextIndex, manual, wrap) {
     var count = pageCount();
     if (!count) {
@@ -952,7 +1019,7 @@
     var target = slides[startIndexForPage(index)];
     var first = slides[0];
     var distance = target && first ? target.offsetLeft - first.offsetLeft : 0;
-    track.style.transform = target ? "translate3d(" + (-distance) + "px, 0, 0)" : "none";
+    track.style.transform = target ? "translate3d(" + (-distance) + "px, 0, 0)" : "none"; markCenter();
     dots.forEach(function (dot, dotIndex) {
       if (dotIndex === index) dot.setAttribute("aria-current", "true");
       else dot.removeAttribute("aria-current");
@@ -988,9 +1055,22 @@
     startAutoplay();
   }
 
+  var GOOGLE_G = '<svg viewBox="0 0 48 48" role="img" aria-label="Google" focusable="false"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+  var AVATAR_COLORS = ["#1268e8", "#0ea5a4", "#7c5cf6", "#e0642f", "#16a34a", "#d6336c"];
+
   function buildCard(review) {
     var card = document.createElement("article");
     card.className = "tm-review";
+
+    var top = document.createElement("div");
+    top.className = "tm-top";
+    var quote = document.createElement("span");
+    quote.className = "tm-quote";
+    quote.setAttribute("aria-hidden", "true");
+    quote.textContent = "\u201C";
+    var google = document.createElement("span");
+    google.className = "tm-google";
+    google.innerHTML = GOOGLE_G;
 
     var stars = document.createElement("div");
     stars.className = "tm-stars";
@@ -1000,7 +1080,7 @@
       var starNode = document.createElement("span");
       starNode.className = star <= review.rating ? "tm-star is-filled" : "tm-star";
       starNode.setAttribute("aria-hidden", "true");
-      starNode.textContent = star <= review.rating ? "★" : "☆";
+      starNode.textContent = "\u2605";
       stars.appendChild(starNode);
     }
 
@@ -1010,14 +1090,26 @@
 
     var meta = document.createElement("footer");
     meta.className = "tm-meta";
+    var personName = String(review.name || "").trim();
+    var avatar = document.createElement("span");
+    avatar.className = "tm-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = (personName.charAt(0) || "?").toUpperCase();
+    avatar.style.background = AVATAR_COLORS[(personName.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+    var who = document.createElement("div");
+    who.className = "tm-who";
     var name = document.createElement("b");
     name.textContent = review.name;
     var date = document.createElement("time");
     date.dateTime = review.date;
     date.textContent = new Date(review.date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-    meta.appendChild(name);
-    meta.appendChild(date);
-    card.appendChild(stars);
+    who.appendChild(name);
+    who.appendChild(date);
+    meta.appendChild(who);
+    meta.appendChild(google);
+    top.appendChild(stars);
+    top.appendChild(quote);
+    card.appendChild(top);
     card.appendChild(text);
     card.appendChild(meta);
     return card;
@@ -1035,7 +1127,8 @@
       var name = String(review.name || "").trim();
       var text = String(review.review || "").trim();
       if (!name || name.length > 80 || !text || text.length > 2000) return null;
-      return { name: name, rating: rating, review: text, date: new Date(date).toISOString() };
+      var photo = String(review.photo || review.image || "").trim();
+      return { name: name, rating: rating, review: text, date: new Date(date).toISOString(), photo: /^https:\/\//i.test(photo) ? photo : "" };
     }).filter(Boolean);
   }
 
@@ -1070,17 +1163,68 @@
     if (state === "error") reviewCount.textContent += " · showing saved reviews";
   }
 
+  /* Dummy customer photos - replace these 5 links with your own images */
+  var AVATAR_PHOTOS = [
+    "https://randomuser.me/api/portraits/women/44.jpg",
+    "https://randomuser.me/api/portraits/men/32.jpg",
+    "https://randomuser.me/api/portraits/women/68.jpg",
+    "https://randomuser.me/api/portraits/men/75.jpg",
+    "https://randomuser.me/api/portraits/men/12.jpg"
+  ];
+
+  function buildAvatars() {
+    var box = section.querySelector("[data-review-avatars]");
+    if (!box) return;
+    box.innerHTML = "";
+    [0, 1, 2, 3, 4].forEach(function (i) {
+      var review = reviews[i] || reviews[i % reviews.length] || {};
+      var nm = String(review.name || "").trim();
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tm-av";
+      b.style.setProperty("--n", i);
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", "Show review by " + nm);
+      b.title = nm;
+      var photo = review.photo || review.image || box.getAttribute("data-photo-" + (i + 1)) || AVATAR_PHOTOS[i];
+      if (photo) {
+        var im = document.createElement("img");
+        im.alt = ""; im.loading = "lazy";
+        im.addEventListener("error", function () {
+          im.remove();
+          b.textContent = (nm.charAt(0) || "?").toUpperCase();
+          b.style.background = AVATAR_COLORS[(nm.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+        });
+        im.src = photo;
+        b.appendChild(im);
+      } else {
+        b.textContent = (nm.charAt(0) || "?").toUpperCase();
+        b.style.background = AVATAR_COLORS[(nm.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+      }
+      b.addEventListener("click", function () {
+        b.classList.remove("is-pop");
+        void b.offsetWidth;
+        b.classList.add("is-pop");
+        window.setTimeout(function () { b.classList.remove("is-pop"); }, 900);
+        go(Math.floor((i % reviews.length) / perView), true);
+      });
+      box.appendChild(b);
+    });
+  }
+
   function renderReviews() {
     track.innerHTML = "";
     list.innerHTML = "";
     slides = [];
 
-    reviews.forEach(function (review, reviewIndex) {
+    /* The slider shows at most 5 reviews; "Show all reviews" lists every one. */
+    var featuredReviews = reviews.slice(0, 5);
+    featuredReviews.forEach(function (review, reviewIndex) {
       var slide = document.createElement("div");
       slide.className = "tm-slide";
       slide.setAttribute("role", "group");
       slide.setAttribute("aria-roledescription", "slide");
-      slide.setAttribute("aria-label", "Review " + (reviewIndex + 1) + " of " + reviews.length);
+      slide.setAttribute("aria-label", "Review " + (reviewIndex + 1) + " of " + featuredReviews.length);
       slide.appendChild(buildCard(review));
       track.appendChild(slide);
       slides.push(slide);
@@ -1092,6 +1236,7 @@
       list.appendChild(item);
     });
 
+    buildAvatars();
     setReviewState("success");
     if (listMessage) {
       var label = reviews.length + (reviews.length === 1 ? " published review." : " published reviews.");
@@ -1343,8 +1488,19 @@
         body: params.toString(),
         signal: controller.signal
       });
-      if (!response.ok) throw new Error("Your review could not be submitted. Please try again.");
-      var result = await response.json();
+      if (!response.ok) {
+        if (window.console) console.error("Review submit failed: HTTP", response.status);
+        throw new Error("Your review could not be submitted. Please try again.");
+      }
+      var rawBody = await response.text();
+      var result;
+      try {
+        result = JSON.parse(rawBody);
+      } catch (parseError) {
+        /* Apps Script returned HTML (login page, "page not found" or an old deployment) instead of JSON. */
+        if (window.console) console.error("Review submit failed: the Apps Script URL did not return JSON. Check the Web App deployment access (Anyone) and that the /exec URL is the latest deployment.");
+        throw new Error("Your review could not be submitted right now. Please try again later.");
+      }
       if (!result || (result.ok !== true && result.success !== true)) throw new Error(result && result.error ? result.error : "Your review could not be saved.");
       delete form.dataset.submissionId;
       form.reset();
@@ -1476,17 +1632,11 @@ document.querySelectorAll("[data-ba]").forEach(function (ba) {
   ba.addEventListener("keydown", touched, { once: true });
 });
 
-/* About section: copy Udyam number + "Our Story" modal */
+/* About section: copy Udyam number */
 (function () {
   var copyBtn = document.getElementById("ab2-copyUdyamBtn");
   var number = document.getElementById("ab2-udyamNumber");
   var feedback = document.getElementById("ab2-copyFeedback");
-  var openBtn = document.getElementById("ab2-openStoryModalBtn");
-  var closeBtn = document.getElementById("ab2-closeStoryModalBtn");
-  var modal = document.getElementById("ab2-storyModal");
-  var scrim = document.getElementById("ab2-modalScrim");
-  var ctaBtn = document.getElementById("ab2-modalGetStartedBtn");
-  var closeTimer;
 
   function copyText(text) {
     if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
@@ -1516,28 +1666,58 @@ document.querySelectorAll("[data-ba]").forEach(function (ba) {
       });
     });
   }
+})();
 
-  function openModal() {
-    if (!modal) return;
-    clearTimeout(closeTimer);
-    modal.hidden = false;
-    requestAnimationFrame(function () { modal.classList.add("ab2-is-open"); });
-    document.body.style.overflow = "hidden";
-    if (openBtn) openBtn.setAttribute("aria-expanded", "true");
-    if (closeBtn) closeBtn.focus();
+/* Back to top / logo "#top" links: header is fixed, so scroll the window itself */
+(function () {
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href="#top"]');
+    if (!a) return; if (e.defaultPrevented) return;
+    e.preventDefault();
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  });
+})();
+
+/* Reliable in-page navigation: smooth scroll, then correct for any layout shift on the way */
+(function () {
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var timer = 0;
+
+  function targetY(el) {
+    var margin = parseFloat(window.getComputedStyle(el).scrollMarginTop) || 96;
+    return Math.max(0, Math.round(el.getBoundingClientRect().top + window.pageYOffset - margin));
   }
-  function closeModal() {
-    if (!modal) return;
-    modal.classList.remove("ab2-is-open");
-    document.body.style.overflow = "";
-    if (openBtn) { openBtn.setAttribute("aria-expanded", "false"); openBtn.focus(); }
-    closeTimer = setTimeout(function () { modal.hidden = true; }, 250);
+
+  function settle(el, tries) {
+    var last = -1, still = 0;
+    window.clearInterval(timer);
+    timer = window.setInterval(function () {
+      var now = Math.round(window.pageYOffset);
+      still = now === last ? still + 1 : 0;
+      last = now;
+      tries--;
+      if (still >= 3 || tries <= 0) {
+        window.clearInterval(timer);
+        if (Math.abs(targetY(el) - window.pageYOffset) > 4) window.scrollTo({ top: targetY(el), behavior: "auto" });
+      }
+    }, 120);
   }
-  if (openBtn) openBtn.addEventListener("click", openModal);
-  if (closeBtn) closeBtn.addEventListener("click", closeModal);
-  if (scrim) scrim.addEventListener("click", closeModal);
-  if (ctaBtn) ctaBtn.addEventListener("click", function () { modal.classList.remove("ab2-is-open"); document.body.style.overflow = ""; closeTimer = setTimeout(function () { modal.hidden = true; }, 250); });
-  window.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && modal && !modal.hidden) closeModal();
+
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest && event.target.closest('a[href^="#"]');
+    if (!link) return; if (event.defaultPrevented) return;
+    var id = link.getAttribute("href").slice(1);
+    if (!id || id === "top") return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    event.preventDefault();
+    var menu = document.getElementById("mobile-menu");
+    var toggle = document.querySelector(".menu-toggle");
+    if (menu && toggle && toggle.getAttribute("aria-expanded") === "true") toggle.click();
+    window.scrollTo({ top: targetY(el), behavior: reduce ? "auto" : "smooth" });
+    if (history.replaceState) history.replaceState(null, "", "#" + id);
+    settle(el, 60);
   });
 })();
